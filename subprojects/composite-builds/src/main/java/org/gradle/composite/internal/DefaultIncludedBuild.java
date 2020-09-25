@@ -66,7 +66,14 @@ public class DefaultIncludedBuild extends AbstractBuildState implements Included
     private final GradleLauncher gradleLauncher;
     private Set<Pair<ModuleVersionIdentifier, ProjectComponentIdentifier>> availableModules;
 
-    public DefaultIncludedBuild(BuildIdentifier buildIdentifier, Path identityPath, BuildDefinition buildDefinition, boolean isImplicit, BuildState owner, WorkerLeaseRegistry.WorkerLease parentLease) {
+    public DefaultIncludedBuild(
+        BuildIdentifier buildIdentifier,
+        Path identityPath,
+        BuildDefinition buildDefinition,
+        boolean isImplicit,
+        BuildState owner,
+        WorkerLeaseRegistry.WorkerLease parentLease
+    ) {
         this.buildIdentifier = buildIdentifier;
         this.identityPath = identityPath;
         this.buildDefinition = buildDefinition;
