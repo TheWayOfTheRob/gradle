@@ -35,6 +35,7 @@ import org.gradle.api.internal.artifacts.ivyservice.projectmodule.LocalComponent
 import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.tasks.TaskReference;
+import org.gradle.initialization.DefaultGradleLauncher;
 import org.gradle.initialization.GradleLauncher;
 import org.gradle.initialization.IncludedBuildSpec;
 import org.gradle.initialization.NestedBuildFactory;
@@ -65,6 +66,7 @@ public class DefaultIncludedBuild extends AbstractBuildState implements Included
 
     private final GradleLauncher gradleLauncher;
     private Set<Pair<ModuleVersionIdentifier, ProjectComponentIdentifier>> availableModules;
+    private boolean configuredByCache;
 
     public DefaultIncludedBuild(
         BuildIdentifier buildIdentifier,
@@ -82,6 +84,11 @@ public class DefaultIncludedBuild extends AbstractBuildState implements Included
         this.parentLease = parentLease;
         // Use a defensive copy of the build definition, as it may be mutated during build execution
         this.gradleLauncher = owner.getNestedBuildFactory().nestedInstance(buildDefinition.newInstance(), this);
+    }
+
+    public void markConfiguredByCache() {
+        ((DefaultGradleLauncher) gradleLauncher).markConfiguredByCache();
+        configuredByCache = true;
     }
 
     @Override
@@ -214,20 +221,25 @@ public class DefaultIncludedBuild extends AbstractBuildState implements Included
 
     @Override
     public synchronized void addTasks(Iterable<String> taskPaths) {
-        gradleLauncher.scheduleTasks(taskPaths);
+        scheduleTasks(taskPaths);
     }
 
     @Override
     public synchronized void execute(final Iterable<String> tasks, final Object listener) {
         gradleLauncher.addListener(listener);
-        gradleLauncher.scheduleTasks(tasks);
+        scheduleTasks(tasks);
         WorkerLeaseService workerLeaseService = gradleLauncher.getGradle().getServices().get(WorkerLeaseService.class);
-        workerLeaseService.withSharedLease(parentLease, new Runnable() {
-            @Override
-            public void run() {
-                gradleLauncher.executeTasks();
-            }
-        });
+        workerLeaseService.withSharedLease(
+            parentLease,
+            gradleLauncher::executeTasks
+        );
+    }
+
+    private void scheduleTasks(Iterable<String> taskPaths) {
+        if (configuredByCache) {
+            return;
+        }
+        gradleLauncher.scheduleTasks(taskPaths);
     }
 
     @Override

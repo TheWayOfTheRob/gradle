@@ -52,4 +52,6 @@ public interface IncludedBuildState extends NestedBuildState {
     void execute(Iterable<String> tasks, Object listener);
 
     <T> T withState(Transformer<T, ? super GradleInternal> action);
+
+    void markConfiguredByCache();
 }
