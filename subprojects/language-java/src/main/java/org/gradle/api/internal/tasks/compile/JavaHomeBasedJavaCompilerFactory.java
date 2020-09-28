@@ -16,6 +16,7 @@
 
 package org.gradle.api.internal.tasks.compile;
 
+import org.gradle.api.internal.ClassPathRegistry;
 import org.gradle.internal.Factory;
 import org.gradle.internal.jvm.Jvm;
 
@@ -27,21 +28,31 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class JavaHomeBasedJavaCompilerFactory implements Factory<JavaCompiler>, Serializable {
-    private final List<File> compilerPluginsClasspath;
+    public static final String JAVA_COMPILER_PLUGIN = "JAVA-COMPILER-PLUGIN";
     // We use a static cache here because we want to reuse classloaders in compiler workers as
     // it has a huge impact on performance. Previously there was a single, JdkTools.current()
     // instance, but we can have different "compiler plugins" classpath. For this reason we use
     // a map, but in practice it's likely there's only one instance in this map.
     private final static transient Map<List<File>, JdkTools> JDK_TOOLS = new ConcurrentHashMap<>();
 
-    public JavaHomeBasedJavaCompilerFactory(List<File> compilerPluginsClasspath) {
-        this.compilerPluginsClasspath = compilerPluginsClasspath;
+    private final ClassPathRegistry classPathRegistry;
+    private List<File> compilerPluginsClasspath;
+
+    public JavaHomeBasedJavaCompilerFactory(ClassPathRegistry classPathRegistry) {
+        this.classPathRegistry = classPathRegistry;
     }
 
     @Override
     public JavaCompiler create() {
-        JdkTools jdkTools = JavaHomeBasedJavaCompilerFactory.JDK_TOOLS.computeIfAbsent(compilerPluginsClasspath, JavaHomeBasedJavaCompilerFactory::createJdkTools);
+        JdkTools jdkTools = JavaHomeBasedJavaCompilerFactory.JDK_TOOLS.computeIfAbsent(getCompilerPluginsClasspath(), JavaHomeBasedJavaCompilerFactory::createJdkTools);
         return jdkTools.getSystemJavaCompiler();
+    }
+
+    private List<File> getCompilerPluginsClasspath() {
+        if (compilerPluginsClasspath == null) {
+            compilerPluginsClasspath = classPathRegistry.getClassPath(JAVA_COMPILER_PLUGIN).getAsFiles();
+        }
+        return compilerPluginsClasspath;
     }
 
     private static JdkTools createJdkTools(List<File> compilerPluginsClasspath) {
