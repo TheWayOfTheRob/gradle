@@ -20,7 +20,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream
 import org.gradle.internal.hash.Hashing
 import org.gradle.performance.fixture.CrossVersionPerformanceTestRunner
-import org.gradle.performance.generator.JavaTestProject
+import org.gradle.performance.fixture.JavaTestProject
 import org.gradle.profiler.BuildContext
 import org.gradle.profiler.BuildMutator
 import org.gradle.profiler.mutations.ApplyAbiChangeToJavaSourceFileMutator
